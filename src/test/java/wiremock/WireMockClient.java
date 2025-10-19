@@ -2,7 +2,9 @@ package wiremock;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import config.TestsConfig;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
@@ -11,10 +13,10 @@ public class WireMockClient {
 
     public static void startMockServer() {
         wireMockServer = new WireMockServer(
-                WireMockConfiguration.options().port(WireMockConfig.MOCK_SERVER_PORT));
+                WireMockConfiguration.options().port(TestsConfig.MOCK_SERVER_PORT).notifier(new ConsoleNotifier(true)));
         wireMockServer.start();
-        WireMock.configureFor("localhost", WireMockConfig.MOCK_SERVER_PORT);
-
+        WireMock.configureFor("localhost", TestsConfig.MOCK_SERVER_PORT);
+        createStubs();
     }
 
     public static void stopMockServer() {
@@ -26,12 +28,23 @@ public class WireMockClient {
     public static void startProxyServer() {
         wireMockServer = new WireMockServer(
                 WireMockConfiguration.options()
-                        .port(WireMockConfig.PROXY_SERVER_PORT)
-                        .usingFilesUnderDirectory(WireMockConfig.WIREMOCK_RESOURCES_DIR)
+                        .port(TestsConfig.PROXY_SERVER_PORT)
+                        .usingFilesUnderDirectory(TestsConfig.WIREMOCK_RESOURCES_DIR)
+                        .notifier(new ConsoleNotifier(true))
         );
         wireMockServer.start();
-        WireMock.configureFor("localhost", WireMockConfig.PROXY_SERVER_PORT);
-        wireMockServer.startRecording(WireMockConfig.TARGET_API_URL);
+        WireMock.configureFor("localhost", TestsConfig.PROXY_SERVER_PORT);
+
+        createStubs();
+        wireMockServer.stubFor(any(anyUrl())
+                .willReturn(aResponse()
+                        .proxiedFrom(TestsConfig.TARGET_API_URL)
+                        .withTransformers("response-template")));
+
+        wireMockServer.startRecording(
+                WireMock.recordSpec()
+                        .forTarget(TestsConfig.TARGET_API_URL)
+                        .makeStubsPersistent(true));
     }
 
     public static void stopProxyServer() {
@@ -46,24 +59,60 @@ public class WireMockClient {
     }
 
     public static void createStubs() {
-        createPostSuccessStub();
-        createDeleteErrorStub();
+        resetAll();
+        createPostUserSuccessStub();
+        getUserSuccessStub();
+        getUserNotFoundStub();
+        updatePutUserSuccessStub();
+        deleteUserSuccessStub();
     }
 
-    private static void createPostSuccessStub() {
-        stubFor(post(urlEqualTo("/user/createWithList"))
-                .withRequestBody(equalToJson("[{\"id\":8,\"username\":\"ivanivanov\",\"email\":\"ivanov@mail.ru\"}]",
-                        true, true))
+    public static void createPostUserSuccessStub() {
+        wireMockServer.stubFor(post(urlEqualTo("/users"))
+                .willReturn(aResponse()
+                        .withStatus(201)
+                        .withHeader("Content-Type", "application/json")
+                        .withTransformers("response-template")
+                        .withBody("{\"name\":\"{{jsonPath request.body '$.name'}}\"," +
+                                "\"job\":\"{{jsonPath request.body '$.job'}}\"," +
+                                "\"id\":\"123\"," +
+                                "\"createdAt\":\"data\"}")));
+
+    }
+
+    public static void getUserSuccessStub() {
+        wireMockServer.stubFor(get(urlEqualTo("/users/2"))
                 .willReturn(aResponse()
                         .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("{\"code\":200,\"type\":\"unknown\",\"message\":\"ok\"}")));
+                        .withHeader("Content-Type", "application/json; charset=utf-8")
+                        .withBody("{\"data\":{\"id\":2," +
+                                "\"email\":\"janet.weaver@reqres.in\"," +
+                                "\"first_name\":\"Janet\"," +
+                                "\"last_name\":\"Weaver\"}}")));
     }
-    private static void createDeleteErrorStub() {
-        stubFor(delete(urlEqualTo("/user/5555"))
+
+    public static void getUserNotFoundStub() {
+        wireMockServer.stubFor(get(urlEqualTo("/users/23"))
                 .willReturn(aResponse()
                         .withStatus(404)));
     }
 
+    public static void updatePutUserSuccessStub() {
+        wireMockServer.stubFor(put(urlEqualTo("/users/2"))
+                .withRequestBody(matchingJsonPath("$.name"))
+                .withRequestBody(matchingJsonPath("$.job"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json; charset=utf-8")
+                        .withTransformers("response-template") // если хочешь динамическую подстановку
+                        .withBody("{\"name\": \"{{jsonPath request.body '$.name'}}\", " +
+                                "\"job\": \"{{jsonPath request.body '$.job'}}\", " +
+                                "\"updatedAt\": \"data\"}")));
+    }
 
+    public static void deleteUserSuccessStub() {
+        wireMockServer.stubFor(delete(urlEqualTo("/users/2"))
+                .willReturn(aResponse()
+                        .withStatus(204)));
+    }
 }
