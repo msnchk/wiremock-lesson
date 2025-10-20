@@ -5,6 +5,8 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.common.ConsoleNotifier;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import config.TestsConfig;
+import data.UserModel;
+import data.UsersData;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
@@ -53,7 +55,10 @@ public class WireMockClient {
     }
 
     private static void createPostUserSuccessStub() {
-        wireMockServer.stubFor(post(urlEqualTo("/users"))
+        int someId = 123;
+        String someDate = "date";
+
+        wireMockServer.stubFor(post(urlEqualTo(TestsConfig.USERS_PATH))
                 .atPriority(1)
                 .withRequestBody(matchingJsonPath("$.name"))
                 .withRequestBody(matchingJsonPath("$.job"))
@@ -63,25 +68,29 @@ public class WireMockClient {
                         .withTransformers("response-template")
                         .withBody("{\"name\":\"{{jsonPath request.body '$.name'}}\"," +
                                 "\"job\":\"{{jsonPath request.body '$.job'}}\"," +
-                                "\"id\":\"123\"," +
-                                "\"createdAt\":\"data\"}")));
+                                "\"id\":\"" + someId + "\"," +
+                                "\"createdAt\":\"" + someDate + "\"}")));
 
     }
 
     private static void getUserSuccessStub() {
-        wireMockServer.stubFor(get(urlEqualTo("/users/2"))
+        UserModel user = UsersData.EXISTING_USER;
+
+        wireMockServer.stubFor(get(urlEqualTo(TestsConfig.USERS_PATH + "/" + UsersData.EXISTING_USER.getId()))
                 .atPriority(1)
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json; charset=utf-8")
-                        .withBody("{\"data\":{\"id\":2," +
-                                "\"email\":\"janet.weaver@reqres.in\"," +
-                                "\"first_name\":\"Janet\"," +
-                                "\"last_name\":\"Weaver\"}}")));
+                        .withBody("{\"data\":{" +
+                                "\"id\":\"" + user.getId() + "\"," +
+                                "\"email\":\"" + user.getEmail() + "\"," +
+                                "\"first_name\":\"" + user.getFirstName() + "\"," +
+                                "\"last_name\":\"" + user.getLastName() + "\"" +
+                                "}}")));
     }
 
     private static void getUserNotFoundStub() {
-        wireMockServer.stubFor(get(urlEqualTo("/users/23"))
+        wireMockServer.stubFor(get(urlEqualTo(TestsConfig.USERS_PATH + "/" + UsersData.NON_EXISTENT_USER.getId()))
                 .atPriority(1)
                 .willReturn(aResponse()
                         .withStatus(404)
@@ -90,7 +99,9 @@ public class WireMockClient {
     }
 
     private static void updatePutUserSuccessStub() {
-        wireMockServer.stubFor(put(urlEqualTo("/users/2"))
+        String someDate = "date";
+
+        wireMockServer.stubFor(put(urlEqualTo(TestsConfig.USERS_PATH + "/" + UsersData.EXISTING_USER.getId()))
                 .atPriority(1)
                 .withRequestBody(matchingJsonPath("$.name"))
                 .withRequestBody(matchingJsonPath("$.job"))
@@ -100,11 +111,11 @@ public class WireMockClient {
                         .withTransformers("response-template")
                         .withBody("{\"name\": \"{{jsonPath request.body '$.name'}}\", " +
                                 "\"job\": \"{{jsonPath request.body '$.job'}}\", " +
-                                "\"updatedAt\": \"data\"}")));
+                                "\"updatedAt\": \"" + someDate + "\"}")));
     }
 
     private static void deleteUserSuccessStub() {
-        wireMockServer.stubFor(delete(urlEqualTo("/users/2"))
+        wireMockServer.stubFor(delete(urlEqualTo(TestsConfig.USERS_PATH + "/" + UsersData.EXISTING_USER.getId()))
                 .atPriority(1)
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json; charset=utf-8")
