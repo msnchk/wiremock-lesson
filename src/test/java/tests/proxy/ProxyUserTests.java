@@ -10,12 +10,13 @@ import config.TestsConfig;
 public class ProxyUserTests extends BaseUserTests {
     @BeforeAll
     static void setup() {
-        WireMockClient.startProxyServer();
+        WireMockClient.startProxyServerWithStubs();
         ApiHelper.setUpRestAssured(TestsConfig.PROXY_SERVER_URL);
     }
 
     @AfterAll
     static void tearDown() {
-        WireMockClient.stopProxyServer();
+        WireMockClient.stopServer();
+        ApiHelper.resetRestAssured();
     }
 }

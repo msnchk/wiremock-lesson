@@ -1,7 +1,8 @@
 package tests.mock;
 
-import io.restassured.RestAssured;
-import org.junit.jupiter.api.*;
+import helpers.ApiHelper;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import tests.BaseUserTests;
 import wiremock.WireMockClient;
 import config.TestsConfig;
@@ -10,12 +11,13 @@ public class MockUserTests extends BaseUserTests {
 
     @BeforeAll
     static void setup() {
-        WireMockClient.startMockServer();
-        RestAssured.baseURI = TestsConfig.MOCK_SERVER_URL;
+        WireMockClient.startMockServerWithStubs();
+        ApiHelper.setUpRestAssured(TestsConfig.MOCK_SERVER_URL);
     }
 
     @AfterAll
     static void tearDown() {
-        WireMockClient.stopMockServer();
+        WireMockClient.stopServer();
+        ApiHelper.resetRestAssured();
     }
 }

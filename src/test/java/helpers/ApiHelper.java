@@ -15,4 +15,8 @@ public class ApiHelper {
 
         RestAssured.requestSpecification = requestSpec;
     }
+
+    public static void resetRestAssured() {
+        RestAssured.reset();
+    }
 }

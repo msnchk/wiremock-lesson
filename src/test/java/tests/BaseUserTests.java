@@ -46,7 +46,8 @@ public class BaseUserTests {
                 .when()
                 .get("/users/23")
                 .then()
-                .statusCode(404);
+                .statusCode(404)
+                .body(equalTo("{}"));
     }
 
     @Test
@@ -69,7 +70,7 @@ public class BaseUserTests {
     void deleteUserSuccessTest() {
         given()
                 .when()
-                .delete("/users/5")
+                .delete("/users/2")
                 .then()
                 .statusCode(204);
     }
