@@ -1,5 +1,6 @@
 package tests.proxy;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import helpers.ApiHelper;
@@ -9,7 +10,7 @@ import config.TestsConfig;
 
 public class ProxyUserTests extends BaseUserTests {
     @BeforeAll
-    static void setup() {
+    static void setup() throws JsonProcessingException {
         WireMockClient.startProxyServerWithStubs();
         ApiHelper.setUpRestAssured(TestsConfig.PROXY_SERVER_URL);
     }

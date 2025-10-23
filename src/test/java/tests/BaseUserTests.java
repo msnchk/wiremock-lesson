@@ -1,51 +1,87 @@
 package tests;
 
 import config.TestsConfig;
-import data.UserModel;
-import data.UsersData;
+import io.restassured.mapper.ObjectMapperType;
+import models.UsersMethodsData;
+import models.get.UserResponseGet;
+import models.post.UserRequestPost;
+import models.post.UserResponsePost;
+import models.put.UserRequestPut;
+import models.put.UserResponsePut;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.within;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
+import org.assertj.core.api.SoftAssertions;
+
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 
 public class BaseUserTests {
-    @ParameterizedTest
-    @MethodSource("data.UsersData#newUsersProvider")
-    void createUserSuccessTest(UserModel newUser) {
-        given()
-                .body("{\"name\": \"" + newUser.getFirstName() + "\", \"job\": \"" + newUser.getJob() + "\"}")
+
+    @Test
+    void createUserSuccessTest() {
+        UserRequestPost userRequest = UserRequestPost.builder().build();
+
+        UserResponsePost userResponse = given()
+                .body(userRequest)
                 .when()
                 .post(TestsConfig.USERS_PATH)
                 .then()
                 .statusCode(201)
-                .body("name", equalTo(newUser.getFirstName()))
-                .body("job", equalTo(newUser.getJob()))
-                .body("id", notNullValue())
-                .body("createdAt", notNullValue());
+                .extract().as(UserResponsePost.class, ObjectMapperType.JACKSON_2);
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(userRequest.getName())
+                .as("Expected name to match the sent request").
+                isEqualTo(userResponse.getName());
+        softly.assertThat(userRequest.getJob())
+                .as("Expected job to match the sent request")
+                .isEqualTo(userResponse.getJob());
+        softly.assertThat(userResponse.getId()).
+                as("Expected generated ID to be present (not null)")
+                .isNotNull();
+        softly.assertThat(userResponse.getCreatedAt())
+                .as("CreatedAt should be close to current time")
+                .isCloseTo(OffsetDateTime.now(), within(5, ChronoUnit.SECONDS));
+
+        softly.assertAll();
     }
 
     @Test
     void getUserSuccessTest() {
-        UserModel user = UsersData.EXISTING_USER;
+        UserResponseGet expectedUser = UserResponseGet.builder().build();
 
-        given()
-                .pathParam("id", user.getId())
+        UserResponseGet userResponse = given()
+                .pathParam("id", expectedUser.getData().getId())
                 .when()
                 .get(TestsConfig.USERS_PATH + "/{id}")
                 .then()
                 .statusCode(200)
-                .body("data.email", equalTo(user.getEmail()))
-                .body("data.first_name", equalTo(user.getFirstName()))
-                .body("data.last_name", equalTo(user.getLastName()));
+                .extract().as(UserResponseGet.class, ObjectMapperType.JACKSON_2);
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(expectedUser.getData().getFirst_name())
+                .as("Expected first_name in db to match response first_name").
+                isEqualTo(userResponse.getData().getFirst_name());
+        softly.assertThat(expectedUser.getData().getLast_name())
+                .as("Expected last_name in db to match response last_name").
+                isEqualTo(userResponse.getData().getLast_name());
+        softly.assertThat(expectedUser.getData().getEmail())
+                .as("Expected email in db to match response email").
+                isEqualTo(userResponse.getData().getEmail());
+        softly.assertThat(expectedUser.getData().getAvatar())
+                .as("Expected avatar link in db to match response avatar link").
+                isEqualTo(userResponse.getData().getAvatar());
+        softly.assertAll();
+
     }
 
     @Test
     void getUserNotFoundTest() {
         given()
-                .pathParam("id", UsersData.NON_EXISTENT_USER.getId())
+                .pathParam("id", UsersMethodsData.NON_EXISTENT_USER_ID_FOR_GET)
                 .when()
                 .get(TestsConfig.USERS_PATH + "/{id}")
                 .then()
@@ -55,25 +91,34 @@ public class BaseUserTests {
 
     @Test
     void updateUserSuccessTest() {
-        String newName = "updatedName";
-        String newJob = "updatedJob";
+        UserRequestPut userRequest = UserRequestPut.builder().build();
 
-        given()
-                .pathParam("id", UsersData.EXISTING_USER.getId())
-                .body("{\"name\": \"" + newName + "\", \"job\": \"" + newJob + "\"}")
+        UserResponsePut userResponse = given()
+                .pathParam("id", userRequest.getId())
+                .body(userRequest)
                 .when()
                 .put(TestsConfig.USERS_PATH + "/{id}")
                 .then()
                 .statusCode(200)
-                .body("name", equalTo(newName))
-                .body("job", equalTo(newJob))
-                .body("updatedAt", notNullValue());
+                .extract().as(UserResponsePut.class, ObjectMapperType.JACKSON_2);
+
+        SoftAssertions softly = new SoftAssertions();
+        softly.assertThat(userRequest.getName())
+                .as("Expected name to match the sent request").
+                isEqualTo(userResponse.getName());
+        softly.assertThat(userRequest.getJob())
+                .as("Expected job to match the sent request")
+                .isEqualTo(userResponse.getJob());
+        softly.assertThat(userResponse.getUpdatedAt())
+                .as("UpdatedAt should be close to current time")
+                .isCloseTo(OffsetDateTime.now(), within(5, ChronoUnit.SECONDS));
+        softly.assertAll();
     }
 
     @Test
     void deleteUserSuccessTest() {
         given()
-                .pathParam("id", UsersData.EXISTING_USER.getId())
+                .pathParam("id", UsersMethodsData.EXISTING_USER_ID_FOR_GET_PUT_DELETE)
                 .when()
                 .delete(TestsConfig.USERS_PATH + "/{id}")
                 .then()

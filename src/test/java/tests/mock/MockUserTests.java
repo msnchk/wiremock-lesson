@@ -1,5 +1,6 @@
 package tests.mock;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import helpers.ApiHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -10,7 +11,7 @@ import config.TestsConfig;
 public class MockUserTests extends BaseUserTests {
 
     @BeforeAll
-    static void setup() {
+    static void setup() throws JsonProcessingException {
         WireMockClient.startMockServerWithStubs();
         ApiHelper.setUpRestAssured(TestsConfig.MOCK_SERVER_URL);
     }
