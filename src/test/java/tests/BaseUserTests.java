@@ -23,7 +23,6 @@ public class BaseUserTests {
     @Test
     void createUserSuccessTest() {
         UserRequestPost userRequest = UserRequestPost.builder().build();
-
         UserResponsePost userResponse = given()
                 .body(userRequest)
                 .when()
@@ -40,19 +39,17 @@ public class BaseUserTests {
                 .as("Expected job to match the sent request")
                 .isEqualTo(userResponse.getJob());
         softly.assertThat(userResponse.getId()).
-                as("Expected generated ID to be present (not null)")
+                as("Expected generated ID to be not null")
                 .isNotNull();
         softly.assertThat(userResponse.getCreatedAt())
                 .as("CreatedAt should be close to current time")
                 .isCloseTo(OffsetDateTime.now(), within(5, ChronoUnit.SECONDS));
-
         softly.assertAll();
     }
 
     @Test
     void getUserSuccessTest() {
         UserResponseGet expectedUser = UserResponseGet.builder().build();
-
         UserResponseGet userResponse = given()
                 .pathParam("id", expectedUser.getData().getId())
                 .when()
@@ -75,7 +72,6 @@ public class BaseUserTests {
                 .as("Expected avatar link in db to match response avatar link").
                 isEqualTo(userResponse.getData().getAvatar());
         softly.assertAll();
-
     }
 
     @Test
@@ -92,7 +88,6 @@ public class BaseUserTests {
     @Test
     void updateUserSuccessTest() {
         UserRequestPut userRequest = UserRequestPut.builder().build();
-
         UserResponsePut userResponse = given()
                 .pathParam("id", userRequest.getId())
                 .body(userRequest)

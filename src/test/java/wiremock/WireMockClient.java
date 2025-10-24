@@ -43,8 +43,7 @@ public class WireMockClient {
 
         wireMockServer.stubFor(any(anyUrl())
                 .willReturn(aResponse()
-                        .proxiedFrom(TestsConfig.TARGET_API_URL)
-                        .withTransformers("response-template")));
+                        .proxiedFrom(TestsConfig.TARGET_API_URL)));
     }
 
     public static void stopServer() {
